@@ -12,4 +12,4 @@ def test_environment():
 def test_suite():
     suite = os.environ.get("TestSuite")
     print("Test Suite:", suite)
-    assert suite in ["smoke", "regression"]
+    assert suite == "regression"
