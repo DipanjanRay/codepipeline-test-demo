@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Package and Test CodeBuild Projects
+Description: Demo CodeBuild Projects
 
 Parameters:
   GitHubRepo:
@@ -9,14 +9,23 @@ Parameters:
   ArtifactBucket:
     Type: String
 
+  BranchName:
+    Type: String
+    Default: main
+
+  TestSuite:
+    Type: String
+    Default: smoke
+
+  EnvironmentName:
+    Type: String
+    Default: dev
+
 Resources:
-  # -------------------------
-  # IAM Role
-  # -------------------------
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: codebuild-demo-role
+      RoleName: demo-codebuild-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -27,9 +36,9 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
 
-  # -------------------------
-  # Packaging CodeBuild
-  # -------------------------
+  # ------------------------------------
+  # Packaging Build (unchanged)
+  # ------------------------------------
   PackageBuild:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -45,15 +54,14 @@ Resources:
         Type: GITHUB
         Location: !Ref GitHubRepo
         BuildSpec: buildspec-package.yml
-      TimeoutInMinutes: 10
 
-  # -------------------------
-  # Test CodeBuild
-  # -------------------------
-  TestBuild:
+  # ------------------------------------
+  # Single Test CodeBuild (GitHub Source)
+  # ------------------------------------
+  DemoTestBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: test-build-project
+      Name: demo-test-build
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
@@ -61,8 +69,14 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:7.0
         Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: Environment
+            Value: !Ref EnvironmentName
+          - Name: TestSuite
+            Value: !Ref TestSuite
       Source:
         Type: GITHUB
         Location: !Ref GitHubRepo
-        BuildSpec: buildspec-test.yml
-      TimeoutInMinutes: 10
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        SourceVersion: !Ref BranchName

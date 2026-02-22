@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: S3 Based Deployment Pipeline
+Description: Demo Pipeline with Test Stage
 
 Parameters:
   ArtifactBucket:
@@ -53,7 +53,24 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: test-build-project
+                ProjectName: package-build-project
               InputArtifacts:
                 - Name: SourceOutput
+              RunOrder: 1
+
+        - Name: TestStage
+          Actions:
+            - Name: RunTests
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: demo-test-build
+                EnvironmentVariables: |
+                  [
+                    {"name":"Environment","value":"dev","type":"PLAINTEXT"},
+                    {"name":"TestSuite","value":"smoke","type":"PLAINTEXT"}
+                  ]
               RunOrder: 1
