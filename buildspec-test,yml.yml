@@ -1,0 +1,21 @@
+version: 0.2
+
+env:
+  variables:
+    TestSuite: "smoke"
+    Environment: "dev"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install pytest
+
+  build:
+    commands:
+      - echo "Running tests"
+      - echo "Branch = $CODEBUILD_SOURCE_VERSION"
+      - echo "TestSuite = $TestSuite"
+      - echo "Environment = $Environment"
+      - pytest test_app.py

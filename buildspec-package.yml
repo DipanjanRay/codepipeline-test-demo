@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Packaging application..."
+      - zip -r app.zip .
+
+  post_build:
+    commands:
+      - echo "Uploading to S3..."
+      - aws s3 cp app.zip s3://codepipeline-test-artifacts-144947567001/app.zip
+
+artifacts:
+  files:
+    - app.zip

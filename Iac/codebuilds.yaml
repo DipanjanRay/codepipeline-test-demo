@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Package and Test CodeBuild Projects
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: https://github.com/DipanjanRay/codepipeline-test-demo.git
+
+  ArtifactBucket:
+    Type: String
+
+Resources:
+  # -------------------------
+  # IAM Role
+  # -------------------------
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: codebuild-demo-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  # -------------------------
+  # Packaging CodeBuild
+  # -------------------------
+  PackageBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: package-build-project
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepo
+        BuildSpec: buildspec-package.yml
+      TimeoutInMinutes: 10
+
+  # -------------------------
+  # Test CodeBuild
+  # -------------------------
+  TestBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: test-build-project
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepo
+        BuildSpec: buildspec-test.yml
+      TimeoutInMinutes: 10
