@@ -24,12 +24,11 @@ Resources:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       RoleArn: !GetAtt PipelineRole.Arn
-
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
 
-       Stages:
+      Stages:
         - Name: Source
           Actions:
             - Name: S3Source
@@ -78,4 +77,3 @@ Resources:
               InputArtifacts:
                 - Name: SourceOutput
               RunOrder: 1
-              
