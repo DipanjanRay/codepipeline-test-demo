@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Demo Pipeline with Test Stage
+Description: Demo Pipeline with Deploy and Test Stage
 
 Parameters:
   ArtifactBucket:
@@ -24,9 +24,11 @@ Resources:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       RoleArn: !GetAtt PipelineRole.Arn
+
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
+
       Stages:
         - Name: Source
           Actions:
@@ -46,16 +48,14 @@ Resources:
 
         - Name: DevDeploy
           Actions:
-            - Name: DummyDeploy
+            - Name: DeployApp
               ActionTypeId:
                 Category: Build
                 Owner: AWS
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: package-build-project
-              InputArtifacts:
-                - Name: SourceOutput
+                ProjectName: app-package-build
               RunOrder: 1
 
         - Name: TestStage
@@ -67,7 +67,7 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: demo-test-build
+                ProjectName: app-test-build
                 EnvironmentVariables: |
                   [
                     {"name":"Environment","value":"dev","type":"PLAINTEXT"},
