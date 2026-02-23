@@ -29,7 +29,7 @@ Resources:
         Type: S3
         Location: !Ref ArtifactBucket
 
-      Stages:
+       Stages:
         - Name: Source
           Actions:
             - Name: S3Source
@@ -56,6 +56,8 @@ Resources:
                 Version: 1
               Configuration:
                 ProjectName: app-package-build
+              InputArtifacts:
+                - Name: SourceOutput
               RunOrder: 1
 
         - Name: TestStage
@@ -73,4 +75,7 @@ Resources:
                     {"name":"Environment","value":"dev","type":"PLAINTEXT"},
                     {"name":"TestSuite","value":"smoke","type":"PLAINTEXT"}
                   ]
+              InputArtifacts:
+                - Name: SourceOutput
               RunOrder: 1
+              
