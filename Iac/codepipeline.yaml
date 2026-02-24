@@ -1,11 +1,24 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Demo Pipeline with Deploy and Test Stage
+Description: CI/CD Pipeline (S3 App + GitHub Test Repo)
 
 Parameters:
   ArtifactBucket:
     Type: String
 
+  GitHubConnectionArn:
+    Type: String
+    Description: AWS CodeConnections ARN for GitHub
+
+  TestBranchName:
+    Type: String
+    Default: main
+    Description: Branch name of test repository
+
 Resources:
+  #################################################
+  # IAM Role for CodePipeline
+  #################################################
+
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:
@@ -17,20 +30,40 @@ Resources:
             Principal:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - codebuild:*
+                  - codestar-connections:UseConnection
+                Resource: "*"
+
+  #################################################
+  # CodePipeline
+  #################################################
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
+      Name: demo-pipeline
       RoleArn: !GetAtt PipelineRole.Arn
+
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
 
       Stages:
+        #################################################
+        # 1️⃣ Source Stage
+        #################################################
+
         - Name: Source
           Actions:
+            # S3 Source (App Artifact)
             - Name: S3Source
               ActionTypeId:
                 Category: Source
@@ -38,28 +71,52 @@ Resources:
                 Provider: S3
                 Version: 1
               OutputArtifacts:
-                - Name: SourceOutput
+                - Name: AppArtifact
               Configuration:
                 S3Bucket: !Ref ArtifactBucket
                 S3ObjectKey: app.zip
                 PollForSourceChanges: true
               RunOrder: 1
 
-        - Name: DevDeploy
+            # GitHub Source (Test Repo)
+            - Name: TestRepoSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              OutputArtifacts:
+                - Name: TestArtifact
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: DipanjanRay/codepipeline-test-automation
+                BranchName: !Ref TestBranchName
+                DetectChanges: true
+              RunOrder: 1
+
+        #################################################
+        # 2️⃣ Deploy Stage (Uses AppArtifact only)
+        #################################################
+
+        - Name: Deploy
           Actions:
-            - Name: DeployApp
+            - Name: DummyDeploy
               ActionTypeId:
                 Category: Build
                 Owner: AWS
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: app-package-build
+                ProjectName: app-deploy-build
               InputArtifacts:
-                - Name: SourceOutput
+                - Name: AppArtifact
               RunOrder: 1
 
-        - Name: TestStage
+        #################################################
+        # 3️⃣ Test Stage (Uses TestArtifact only)
+        #################################################
+
+        - Name: Test
           Actions:
             - Name: RunTests
               ActionTypeId:
@@ -75,5 +132,5 @@ Resources:
                     {"name":"TestSuite","value":"smoke","type":"PLAINTEXT"}
                   ]
               InputArtifacts:
-                - Name: SourceOutput
+                - Name: TestArtifact
               RunOrder: 1

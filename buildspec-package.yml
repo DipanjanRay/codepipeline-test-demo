@@ -9,7 +9,7 @@ phases:
   post_build:
     commands:
       - echo "Uploading to S3..."
-      - aws s3 cp app.zip s3://codepipeline-test-artifacts-144947567001/app.zip
+      - aws s3 cp app.zip s3://$ARTIFACT_BUCKET/app.zip
 
 artifacts:
   files:
